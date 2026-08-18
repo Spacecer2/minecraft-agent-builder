@@ -71,3 +71,23 @@ looks unfinished and blocks movement.
 Before placing the "closing" block of any shell, confirm your exit is still open:
 you can step out, the door frame is unblocked, and the block you would stand on
 is air. If not, place the closing block last.
+
+## Goal phrases (back brain, Round 2)
+
+| Phrase                  | What the back brain does                            |
+| ----------------------- | --------------------------------------------------- |
+| `barricade <target>`    | Place a defensive wall to shield against a nearby enemy (barricade capability). |
+| `trade <item> <n>`      | Get items from a villager.                          |
+| `open chest <item> <n>` | Get items from a nearby chest.                      |
+| `makeFood`              | Food; falls back harvest → villager → chest by utility. |
+
+## Fallback & resilience notes (Round 2)
+
+- **Utility weighting**: fallback options are scored
+  `utility = (value × importance) / (1 + distance + time + risk)`; the cheapest
+  source wins, so the bot behaves like a human deciding whether the far villager
+  is worth the walk.
+- **Report-then-resume on death**: a bot that dies mid-goal reports `[DIED]` and
+  resumes the goal (status `resumed-after-death`) rather than aborting.
+- **Event-driven watchdog**: preemption reacts to mineflayer events (death,
+  health, entityHurt, forcedMove, breath) instantly, not only on a poll.

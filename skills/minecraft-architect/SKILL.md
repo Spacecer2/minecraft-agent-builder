@@ -245,6 +245,10 @@ Given the minecraft-mcp-server tools, a clean build session is:
     mode. Cooperative tools (move-to-position, walk-path, place-blocks,
     execute-plan, run-task-step) return `[INTERRUPTED]` instead of continuing,
     so you can safely stop and reassess.
+    **The watchdog is event-driven**: preemption reacts to mineflayer events
+    (death, health, entityHurt, forcedMove, breath) the instant they fire, not on
+    the next poll — so a mid-goal death or hit cancels the current action
+    immediately.
     **Player chat preempts you too**: with the `chat` event enabled (or
     `watchdog-listen` / `listen`), a human writing in chat instantly interrupts
     your current action and switches you to `listen` mode. Read the command via
@@ -260,6 +264,14 @@ Given the minecraft-mcp-server tools, a clean build session is:
     `BLOCKED: <reason>. Context: <json>.` NEED_DECISION — direct it or call
     `run-task-resume`. Reasoning intensity scales with circumstances: cheap
     defaults, deeper reasoning only when reality demands.
+    **Fallbacks are weighed by utility** `= (value × importance) / (1 + distance +
+    time + risk)` — the back brain picks the cheapest source first, so it harvests
+    crops before trading with a far villager before opening a nearby chest, and
+    only then escalates to you ("is the far villager worth the walk?").
+    **If the bot dies mid-goal it reports `[DIED]` and then RESUMES** the goal
+    (status `resumed-after-death`) instead of aborting. Goal phrases include
+    `barricade <target>`, `trade <item> <n>`, `open chest <item> <n>`, and
+    `makeFood`.
 16. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
     floating/gap blocks); confirm the scaffolding is gone, the path is clear,
     and `secure-perimeter` placed lights against night mobs.
@@ -284,3 +296,32 @@ Given the minecraft-mcp-server tools, a clean build session is:
 - [ ] Palette ≤ 4 materials; depth/detail added.
 - [ ] Redstone circuit tested in isolation, wiring hidden.
 - [ ] Finished build scanned; site left clean and lit.
+
+---
+
+## 9. Round 2: event-driven watchdog, dopamine weighting, death resume
+
+The back brain and watchdog gained human-like judgement:
+
+- **Event-driven watchdog** — `watchdog-start` preemption reacts to mineflayer
+  events (death, health, entityHurt, forcedMove, breath) the instant they fire,
+  not on the next poll. The goal orchestrator uses it to cancel mid-action goals
+  when the bot is interrupted; cooperative tools still return `[INTERRUPTED]`
+  and stay resumable.
+- **Utility "dopamine" weighting** — when a goal has several ways to get an item,
+  the back brain scores each option by
+  `utility = (value × importance) / (1 + distance + time + risk)` and takes the
+  cheapest source first. That is how `makeFood` prefers harvesting your crops
+  over walking to a far villager or opening a chest: *is the far villager worth
+  the walk?*
+- **Report-then-resume on death** — if the bot dies mid-goal it reports `[DIED]`
+  and then RESUMES the goal (status `resumed-after-death`) instead of aborting.
+  Re-arm, re-path, continue.
+
+### New goal phrases
+- `barricade <target>` — place a defensive wall between you and a nearby enemy
+  (the required barricade capability).
+- `trade <item> <n>` — get items from a villager.
+- `open chest <item> <n>` — get items from a nearby chest.
+- `makeFood` — food, falling back harvest → villager → chest by utility before
+  escalating to you.

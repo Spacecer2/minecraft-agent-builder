@@ -84,6 +84,15 @@ round-trips and navigate like a human:
 
 - **Permission-layer delegation brain**: `run-goal` runs deterministic hardcoded defaults per goal, checks circumstances, and returns concise verified reports. Compound goals ("get some crops and drop me some bread" → harvest → make bread → deliver). Uses existing items first; crafts only when absent; escalates to the front brain only at the deepest blocked state via `BLOCKED: <reason>. Context: <json>.` NEED_DECISION. Reasoning intensity scales with circumstances (0 = no LLM, 1-2 = deterministic fallback, 3 = NEED_DECISION).
 
+## Round 2: event-driven watchdog, dopamine weighting, death resume, goal skills
+
+Round 2 of the architect-style agent (MCP side: `Spacecer2/minecraft-mcp-server` commit `2f84ff3`, 427 tests passing):
+
+- **Event-driven watchdog**: `watchdog-start` preemption now reacts to mineflayer events (death, health, entityHurt, forcedMove, breath) instantly, not just polling. The goal orchestrator uses it to cancel mid-action goals when the bot is interrupted.
+- **Utility "dopamine" weighting**: the goal back brain scores fallback options by `utility = (value × importance) / (1 + distance + time + risk)` and picks the cheapest source first — harvest crops vs trade with a villager vs withdraw from a chest — before escalating to the player. Makes the agent behave like a human deciding "is the far villager worth the walk?"
+- **Report-then-resume on death**: when the bot dies mid-goal, it reports `[DIED]` and then RESUMES the goal (status `resumed-after-death`) instead of aborting.
+- **New goal skills**: `barricade` (place a defensive wall against a nearby enemy — the required barricade capability), `trade <item> <n>` (items from a villager), `open chest <item> <n>` (items from a nearby chest). `makeFood` now falls back through harvest → villager → chest by utility.
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,
