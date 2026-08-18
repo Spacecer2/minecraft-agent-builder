@@ -67,6 +67,13 @@ round-trips and navigate like a human:
 - **Containers & interaction**: `find-container`/`open-container`/`deposit-item`/`withdraw-item`, `organize-inventory`, `activate-block`, `use-item-on`.
 - **Build QA + redstone + persistence + safety**: `inspect-build`, `secure-perimeter`, `place-redstone`, `blueprint-save`/`blueprint-list`/`blueprint-load`.
 
+## Round-4: self-sufficiency + awareness (later commits)
+
+- **Combat**: `attack-entity`, `flee`, `equip-best-weapon`, `get-health`.
+- **Farming/food/sleep**: `plant-crop`, `harvest-crop`, `feed-animal`, `cook-food`, `sleep`.
+- **Motion**: `find-safe-path`, `walk-path`, `wait`, `until`.
+- **Vision/awareness**: `get-bot-stats` (consolidated dashboard), `describe-view`, `interact-entity`.
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,

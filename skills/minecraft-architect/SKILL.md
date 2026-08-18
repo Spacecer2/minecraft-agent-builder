@@ -227,7 +227,15 @@ Given the minecraft-mcp-server tools, a clean build session is:
 11. **Stock a base**: `deposit-item`/`withdraw-item`/`open-container` to move
     materials between inventory and chests; `organize-inventory` to see what
     you have.
-12. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
+12. **Stay self-sufficient**: `plant-crop`/`harvest-crop` for food, `cook-food`
+    to prepare it, `sleep` to skip the night. `get-bot-stats` gives a full
+    vitals/world/inventory/hostile dashboard in one call; `get-health` warns
+    when low.
+13. **Handle threats**: `find-hostiles`/`get-surroundings` to spot danger;
+    `equip-best-weapon` + `attack-entity` to fight, `flee` to run, `describe-view`
+    /`look-ahead` to see before committing, `find-safe-path` to route around
+    lava/water, `walk-path` for multi-stop trips.
+14. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
     floating/gap blocks); confirm the scaffolding is gone, the path is clear,
     and `secure-perimeter` placed lights against night mobs.
 
