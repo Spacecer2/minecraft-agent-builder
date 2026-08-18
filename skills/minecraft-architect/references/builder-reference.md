@@ -81,6 +81,13 @@ is air. If not, place the closing block last.
 | `open chest <item> <n>` | Get items from a nearby chest.                      |
 | `makeFood`              | Food; falls back harvest → villager → chest by utility. |
 
+**Observe loop (Round 4)**: `run-goal` starts a goal and returns a task id
+immediately (non-blocking) — the background runner advances the deterministic
+plan on its own cadence. The front brain stays in the loop: poll
+`run-task-status` for progress, poll `wait-for-chat`/`read-new-chat` (short
+timeout) for the player, and resolve any `BLOCKED` / NEED_DECISION pause with
+`resolve-task` (provides the instruction) so the goal resumes.
+
 ## Fallback & resilience notes (Round 2)
 
 - **Utility weighting**: fallback options are scored
@@ -123,3 +130,46 @@ intensity 3 with `needDecision` reason `constraint_violation`.
 | Goal disposition | resumable / invalid | only resume what is safe to resume |
 
 Event → priority map: `PRIORITY_BY_EVENT` in `src/watchdog.ts`.
+
+## Primal autonomy (Round 5)
+
+Formal spec: `docs/architecture.md` in the MCP repo
+(`Spacecer2/minecraft-mcp-server` commit `8663a37`, 452 tests passing).
+
+### Arousal (src/arousal.ts, src/utility.ts)
+| Axis | Sense direction | Sensed from |
+| ---- | --------------- | ----------- |
+| ANXIETY | bottom-up | danger sensors: hostiles, low health, low oxygen, lava/void/fire |
+| BOREDOM | top-down | lack of novelty |
+
+- `weightsFromArousal()`: high anxiety → risk-weight dominates (4× at panic) +
+  higher importance floor; high boredom → lower risk-aversion + novelty bias.
+- `defaultWeights()`: arousal-aware entry point; deterministic `utility()` stays
+  backward-compatible — hard-constraint veto preserved.
+- **Arousal is sensed by the primal brain, not by the LLM reading logs.**
+
+### Eternal primal safety loop (src/primal-brain.ts, src/watchdog.ts)
+- Runs continuously with the objective **reach safety while avoiding danger**.
+- Deepest access: issues **P0** interrupts that **cancel anything** (any
+  goal/tool/LLM action).
+- On danger: (a) feed arousal sensor, (b) `setInterrupt(P0)`, (c) execute the
+  safety micro-task ITSELF (escape-void / escape-fire / escape-lava / surface /
+  defend / flee) via the bot API — **no LLM**, hard efficient code.
+- Chains its own safety actions without per-step LLM latency (eternal tasking).
+- Starts for real bots once connected: `watchdog.startPrimalLoopForBot`.
+
+### LLM tool surface (src/tool-factory.ts, src/main.ts)
+- LLM exposed **only** to MAJOR functions: run-goal, run-task-status,
+  run-task-step, resolve-task, abort-task, watchdog-*, spawn/list/despawn-bot,
+  chat, world-state, perception, memory, coordination, map, template.
+- Micro-tools (dig-block, place-block, get-recipe, list-inventory,
+  move-to-position, attack-entity, scan-area, craft, smelt, gather, combat, ...)
+  are 'primal' and HIDDEN from the LLM — called internally by major functions and
+  the primal brain.
+- Mechanism: `visibility` ('major'|'primal') via `setPrimalToolNames()` at one
+  chokepoint; primal tools keep their executor (`callPrimal`) but are not
+  surfaced via `server.tool`.
+
+### Direction
+- TOP-DOWN = goal delegation → reason → instinct (boredom).
+- BOTTOM-UP = event delegation → instinct → reason (anxiety).

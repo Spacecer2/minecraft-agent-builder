@@ -25,6 +25,10 @@ not redoing work, and not trapping yourself.
 
 ## 1. The Architect Mindset (before touching a block)
 
+> **You are a continuously active agent, not a one-shot script.** Drive goals
+> incrementally, observe progress, and keep listening to the player the whole
+> time. Never fire one long blocking call and wait idle.
+
 1. **Read the site first.** Run `scan-area` over the footprint and its clearances
    before placing anything. Know what is already there: terrain height, trees,
    water, caves, existing structures.
@@ -222,8 +226,11 @@ Given the minecraft-mcp-server tools, a clean build session is:
    `redstone-layout` (door/lamp/trap/piston/rsswitch/auto-farm); persist
    reusable layouts with `blueprint-save`/`blueprint-load`.
 10. **One-command jobs**: for common goals use `run-goal build <template>` or
-    `run-goal collect <n> <item>`, then advance with `run-task-step` /
-    `run-task-status`. Track discovered sites with `map-mark`/`explore`.
+    `run-goal collect <n> <item>`. `run-goal` now returns a **task id**
+    immediately (it does not block) — the background goal runner advances the
+    deterministic plan on its own cadence, and you observe it via
+    `run-task-status` / advance with `run-task-step`. Track discovered sites with
+    `map-mark`/`explore`.
 11. **Stock a base**: `deposit-item`/`withdraw-item`/`open-container` to move
     materials between inventory and chests; `organize-inventory` to see what
     you have.
@@ -253,25 +260,31 @@ Given the minecraft-mcp-server tools, a clean build session is:
     `watchdog-listen` / `listen`), a human writing in chat instantly interrupts
     your current action and switches you to `listen` mode. Read the command via
     `read-interrupt`, respond, then `watchdog-resume` to go back to what you
-    were doing. This listening runs in the background in parallel — you never
-    need to poll for it.
-15. **Delegate to the back brain, don't hand-drive**: use `run-goal` for compound
-    goals ("get some crops and drop me some bread") — the back brain runs the
-    deterministic default plan, checks circumstances, and returns a concise
-    verified report (`harvested 4 wheat → made bread x1 → delivered bread x1 to
-    Spacecer2`). It uses existing items first, only crafts when absent, and
-    escalates to you (the front brain) only at the deepest blocked state with a
-    `BLOCKED: <reason>. Context: <json>.` NEED_DECISION — direct it or call
-    `run-task-resume`. Reasoning intensity scales with circumstances: cheap
-    defaults, deeper reasoning only when reality demands.
+    were doing.     This listening runs in the background in parallel and the background
+    watchdog catches urgent interrupts for you — but **you still poll
+    `wait-for-chat` (short timeout) / `read-new-chat` each turn** so you stay
+    responsive to the player mid-goal instead of idling during a long build.
+15. **Delegate to the back brain, then stay in the loop**: use `run-goal` for
+    compound goals ("get some crops and drop me some bread"). `run-goal` returns
+    a **task id immediately** — it no longer blocks — and a background goal
+    runner advances the deterministic default plan one step at a time, writing
+    progress to chat. **Never issue one long blocking call and wait.** Instead
+    stay engaged in an act→observe→decide→act loop: poll `run-task-status` for
+    progress, poll `wait-for-chat`/`read-new-chat` (short timeout) for the
+    player, and keep listening the whole time. The back brain uses existing
+    items first, only crafts when absent, and PAUSES (status
+    `awaiting-decision`) when it hits a `BLOCKED: <reason>. Context: <json>.`
+    NEED_DECISION with no deterministic fallback — resolve it with `resolve-task`
+    (provide the instruction), and the goal resumes.
     **Fallbacks are weighed by utility** `= (value × importance) / (1 + distance +
     time + risk)` — the back brain picks the cheapest source first, so it harvests
     crops before trading with a far villager before opening a nearby chest, and
     only then escalates to you ("is the far villager worth the walk?").
     **If the bot dies mid-goal it reports `[DIED]` and then RESUMES** the goal
-    (status `resumed-after-death`) instead of aborting. Goal phrases include
-    `barricade <target>`, `trade <item> <n>`, `open chest <item> <n>`, and
-    `makeFood`.
+    (status `resumed-after-death`) instead of aborting; a watchdog interrupt
+    pauses the runner (report-then-resume), and `watchdog-resume` resumes. Goal
+    phrases include `barricade <target>`, `trade <item> <n>`,
+    `open chest <item> <n>`, and `makeFood`.
 16. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
     floating/gap blocks); confirm the scaffolding is gone, the path is clear,
     and `secure-perimeter` placed lights against night mobs.
@@ -375,3 +388,99 @@ models, latency budgets, and testing expectations.
   (`recentTriggers`) instead of a burst of conflicting directives.
 - **Goal disposition**: the watchdog records whether the interrupted goal is
   `resumable` or `invalid`; only resume what is actually safe to resume.
+
+---
+
+## 11. Round 4: hybrid engagement — kill the LLM idleness
+
+Round 4 fixes "LLM idleness". Previously the front brain was told to call
+`run-goal` and wait for a blocking report, and never to poll chat — so it sat
+idle during long goals. Now engagement is a hybrid: the back brain runs the
+deterministic goal, and the front brain stays in the act→observe→decide→act
+loop the whole time.
+
+- **`run-goal` is non-blocking and returns a task id immediately.** It no longer
+  blocks until completion. A **background goal runner** advances the
+  deterministic plan step-by-step (roughly one step per 1-2s cadence), writing
+  progress lines to chat / the MessageStore.
+- **Act→observe→decide→act loop**: poll `run-task-status` for progress, poll
+  `wait-for-chat`/`read-new-chat` (short timeout) for the player, and keep
+  listening the whole time. Never issue one long blocking call and wait.
+- **`resolve-task` for BLOCKED / NEED_DECISION**: when a goal hits a blocked
+  state with no deterministic fallback, it **PAUSES** (status
+  `awaiting-decision`) instead of silently guessing. Call `resolve-task` with
+  the instruction and the goal resumes.
+- **Watchdog pause + report-then-resume**: a watchdog interrupt pauses the goal
+  runner (report-then-resume on death preserved); `watchdog-resume` resumes the
+  paused goal.
+- **`abort-task`**: cancel a running goal cleanly when it is no longer wanted.
+
+---
+
+## 12. Round 5: primal autonomy — eternal safety loop, arousal weights, LLM exposed only to major functions
+
+Round 5 gives the agent a **primal brain** that never rests and never asks the
+LLM for permission. It rebalances who senses stress (the primal brain, not the
+LLM reading logs) and who gets to micro-manage the body (the back brain, not the
+LLM). Formal spec: `docs/architecture.md` in the MCP repo
+(`Spacecer2/minecraft-mcp-server` commit `8663a37`, 452 tests passing).
+
+### Arousal system — anxiety + boredom modulate the weights globally
+- **Two sensed axes** on a global arousal model: **ANXIETY** (bottom-up) is
+  sensed by the primal brain from danger sensors — hostiles, low health, low
+  oxygen, lava/void/fire. **BOREDOM** (top-down) comes from lack of novelty.
+- **`weightsFromArousal()`** modulates the utility weights **globally**: high
+  anxiety makes the risk-weight dominate (up to 4× at panic) and raises the
+  importance floor; high boredom lowers risk-aversion and adds a novelty bias.
+- **Arousal is sensed by the primal brain, not by the LLM reading logs.** The
+  utility layer gets an arousal-aware `defaultWeights()` entry point while the
+  deterministic `utility()` stays backward-compatible — the hard-constraint veto
+  (never drown/lava/void/low-health) is preserved.
+- **Primal instructions > LLM long-term vision in stressful situations.** When
+  arousal is high, the primal brain's sensed stress overrides whatever the LLM's
+  plan was — the bot prioritizes safety over the goal.
+
+### Primal brain eternal safety loop — reaches safety while avoiding danger
+- A background loop that runs **continuously** (not just reactively cancelling).
+  Its objective: **reach safety while avoiding danger**.
+- It has the **deepest access** — issues **P0** (highest-priority) interrupts
+  that **cancel anything** (any goal / tool / LLM action).
+- When it senses danger it (a) feeds the arousal sensor, (b) cancels via
+  `setInterrupt(P0)`, and (c) executes the lower-level safety micro-task **itself**
+  — escape-void, escape-fire, escape-lava, surface, defend, flee — using the bot
+  API directly: **no LLM, hard efficient code**.
+- **Eternal tasking like the goal-runner**: it chains its own safety actions
+  without per-step LLM latency. The primal loop starts for real bots once
+  connected (`watchdog.startPrimalLoopForBot`).
+
+### LLM tool surface — the LLM sees only the major functions
+- The LLM is exposed **only** to the MAJOR functions: `run-goal`,
+  `run-task-status`, `run-task-step`, `resolve-task`, `abort-task`, `watchdog-*`,
+  `spawn`/`list`/`despawn-bot`, `chat`, `world-state`, `perception`, `memory`,
+  `coordination`, `map`, `template`.
+- The micro-tools (dig-block, place-block, get-recipe, list-inventory,
+  move-to-position, attack-entity, scan-area, craft, smelt, gather, combat, ...)
+  are marked **'primal'** and **hidden** from the LLM's tool list. They are
+  called internally by the major functions and the primal brain.
+- **Why**: this stops the LLM from micro-managing single axioms/movements (each
+  thought costing latency) and forces it to **delegate to the back brain** via
+  `run-goal` / `run-task-*`.
+- **Mechanism**: ToolFactory supports a `visibility` ('major'|'primal') concept
+  via `setPrimalToolNames()` at a single chokepoint; primal tools keep their
+  executor internally (`callPrimal`) but are NOT surfaced via `server.tool`.
+
+### Direction summary
+- **TOP-DOWN** = goal delegation → reason → instinct (boredom).
+- **BOTTOM-UP** = event delegation → instinct → reason (anxiety).
+
+### Operational guidance for the agent
+- You operate through the **major functions** only. Delegate execution to the
+  back brain with `run-goal`, track with `run-task-status`/`run-task-step`, and
+  resolve pauses with `resolve-task`.
+- **You do not hold the steering wheel under stress.** The primal brain senses
+  danger (arousal/anxiety) and may P0-cancel whatever you are doing to reach
+  safety first. Do not fight a P0 interrupt — `read-interrupt`, let the primal
+  loop run, then `watchdog-resume` when safe.
+- **Stress is sensed by sensors, not by you reading raw logs.** Trust the primal
+  brain's arousal readout over your own reading of the world when the two
+  disagree in a stressful moment.
