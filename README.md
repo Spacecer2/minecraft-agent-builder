@@ -76,7 +76,8 @@ round-trips and navigate like a human:
 
 ## Round-5: event-driven preemption watchdog (later commit)
 
-- **Watchdog**: `watchdog-start` (hostile/creeper/fall/void/lava/low-health/hunger/on-fire/night/drowning/inventory-full), `read-interrupt`, `watchdog-status`, `watchdog-stop`, `watchdog-resume`, `set-mode`/`get-mode`.
+- **Watchdog**: `watchdog-start` (hostile/creeper/fall/void/lava/low-health/hunger/on-fire/night/drowning/inventory-full/**chat**), `read-interrupt`, `watchdog-status`, `watchdog-stop`, `watchdog-resume`, `set-mode`/`get-mode`, `watchdog-listen`, `listen`.
+- **Chat-triggered preemption**: a player writing in chat instantly interrupts the current action and switches to `listen` mode, via a background listener running in parallel (no polling). Read the command with `read-interrupt`, respond, then `watchdog-resume`.
 - **Cooperative cancellation**: long-running tools (`move-to-position`, `walk-path`, `place-blocks`, `fill-area`, `execute-plan`, `run-task-step`) return `[INTERRUPTED]` and stay resumable, so the watchdog can cancel and switch the agent's mode via prompt injection.
 
 ## Building ethos

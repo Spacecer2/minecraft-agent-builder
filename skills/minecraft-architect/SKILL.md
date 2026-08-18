@@ -236,15 +236,21 @@ Given the minecraft-mcp-server tools, a clean build session is:
     /`look-ahead` to see before committing, `find-safe-path` to route around
     lava/water, `walk-path` for multi-stop trips.
 14. **Let the watchdog preempt you**: run `watchdog-start` with the events you
-    care about (hostile, creeper, fall, void, lava, low-health, night, ...). The
-    watchdog monitors in the background and, on a trigger, CANCELS your current
-    action and injects a `[WATCHDOG]` directive — read it via `read-interrupt`
+    care about (hostile, creeper, fall, void, lava, low-health, night, chat, ...).
+    The watchdog monitors in the background and, on a trigger, CANCELS your
+    current action and injects a `[WATCHDOG]` directive — read it via `read-interrupt`
     and switch mode: `set-mode defense` then `equip-best-weapon`/`attack-entity`/
     `flee`, or `set-mode heal` and eat, or `flee`/`secure-perimeter` at night.
     When safe, `watchdog-resume` clears the interrupt and restores your prior
     mode. Cooperative tools (move-to-position, walk-path, place-blocks,
     execute-plan, run-task-step) return `[INTERRUPTED]` instead of continuing,
     so you can safely stop and reassess.
+    **Player chat preempts you too**: with the `chat` event enabled (or
+    `watchdog-listen` / `listen`), a human writing in chat instantly interrupts
+    your current action and switches you to `listen` mode. Read the command via
+    `read-interrupt`, respond, then `watchdog-resume` to go back to what you
+    were doing. This listening runs in the background in parallel — you never
+    need to poll for it.
 15. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
     floating/gap blocks); confirm the scaffolding is gone, the path is clear,
     and `secure-perimeter` placed lights against night mobs.
