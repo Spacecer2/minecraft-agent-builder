@@ -91,3 +91,35 @@ is air. If not, place the closing block last.
   resumes the goal (status `resumed-after-death`) rather than aborting.
 - **Event-driven watchdog**: preemption reacts to mineflayer events (death,
   health, entityHurt, forcedMove, breath) instantly, not only on a poll.
+
+## Realtime control authority (Round 3)
+
+Formal spec: `docs/architecture.md` in the MCP repo
+(`Spacecer2/minecraft-mcp-server` commit `cb7a859`, 440 tests passing).
+
+### Control-authority precedence
+**P0 safety > P1 reflexes > P2 committed action > P3 goal policy > P4 planning.**
+Higher priority overwrites; same/lower is suppressed.
+
+### Hard constraints (P0)
+`HARD_CONSTRAINTS` = drowning, lava, void, low-health. A violation means the
+option is **vetoed, never degraded**: `constraintViolated` rejects,
+`utility()` → `-Infinity`, `bestOption` filters, `safeInput(bot, input)` strips.
+`executeGoal` → `preFlightSafetyCheck(bot)` before each step → blocked at
+intensity 3 with `needDecision` reason `constraint_violation`.
+
+### Interrupt API
+- `setInterrupt` (priority-aware), `getInterruptPriority`, `canPreempt`,
+  `interruptSuppressed`.
+- Priorities via `InterruptPriority` enum (P0..P4).
+
+### Anti-thrash controls
+| Mechanism | Function | Effect |
+| --------- | -------- | ------ |
+| Hysteresis | `setHysteresis`/`pendingTickCount` | danger must persist N ticks before firing |
+| Cooldown | `setCooldownMs`/`lastTriggerAt` | same event cannot re-trigger within window |
+| Min-commitment | `noteCommitment`/`clearCommitment`/`commitmentSuppresses` | committed action suppresses interrupts |
+| Aggregation | `recentTriggers` | near-simultaneous triggers batch into one decision |
+| Goal disposition | resumable / invalid | only resume what is safe to resume |
+
+Event → priority map: `PRIORITY_BY_EVENT` in `src/watchdog.ts`.

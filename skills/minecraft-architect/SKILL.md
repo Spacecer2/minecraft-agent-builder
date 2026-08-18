@@ -325,3 +325,53 @@ The back brain and watchdog gained human-like judgement:
 - `open chest <item> <n>` — get items from a nearby chest.
 - `makeFood` — food, falling back harvest → villager → chest by utility before
   escalating to you.
+
+---
+
+## 10. Round 3: realtime control authority
+
+The Action Machine gained a safety floor, priorities, and anti-thrash, so it
+keeps control under pressure instead of flickering between reflexes and goals.
+Formal spec: `docs/architecture.md` in the MCP repo (`Spacecer2/minecraft-mcp-server`
+commit `cb7a859`, 440 tests passing). Read it for the layer model, delegation
+models, latency budgets, and testing expectations.
+
+### Hard constraints (P0 safety) — never drown, lava, void, or low-health
+- **The veto is absolute and applies to every committed action.** The utility
+  layer (`utility.ts`) hard-blocks any option that violates a death-trap
+  constraint — `constraintViolated` rejects it, `utility()` returns `-Infinity`
+  for it, and `bestOption` filters it out. `safeInput(bot, input)` cleans an
+  option list before you even see it, and `checkConstraints(bot)` lets you probe
+  the current bot.
+- **Goal steps are gated too**: `executeGoal` runs `preFlightSafetyCheck(bot)`
+  before every step. A violation does NOT just skip the step — it blocks the goal
+  at intensity 3 with `needDecision` reason `constraint_violation`, so the human
+  gets to decide rather than the goal silently ignoring a deadly situation.
+- **Never override the veto.** No goal, no template, no fallback may make the
+  bot stand in lava, drown, walk into the void, or run on a sliver of health.
+  If a step would do that, stop and escalate.
+
+### Interrupt priority (P0 > P1 > P2 > P3 > P4)
+- Every interrupt carries a priority: **P0 safety > P1 reflexes > P2 committed
+  action > P3 goal policy > P4 planning**.
+- `setInterrupt` is priority-aware: a higher-priority interrupt overwrites the
+  current one; a same- or lower-priority interrupt is **suppressed**
+  (`interruptSuppressed`). A random creeper ping (reflex) can never clobber an
+  active void emergency (safety), and a planning reconsideration never stomps a
+  committed goal.
+- Use `canPreempt`/`getInterruptPriority` to reason about whether you may act
+  right now before committing a multi-block action.
+
+### Anti-thrash — the watchdog stops lying to you
+- **Hysteresis**: a danger must persist for `pendingTickCount` ticks before the
+  watchdog fires (`setHysteresis`), so a single passing mob or a 1-tick breath
+  dip does not cancel your build.
+- **Cooldown**: the same event cannot re-trigger within `setCooldownMs` of its
+  last trigger, so a lingering threat does not spam repeated interrupts.
+- **Min-commitment**: `noteCommitment`/`clearCommitment` let a committed action
+  suppress interrupts (`commitmentSuppresses`) — you get to finish a meaningful
+  step instead of being cancelled mid-place every tick.
+- **Aggregation**: near-simultaneous triggers are batched into one decision
+  (`recentTriggers`) instead of a burst of conflicting directives.
+- **Goal disposition**: the watchdog records whether the interrupted goal is
+  `resumable` or `invalid`; only resume what is actually safe to resume.

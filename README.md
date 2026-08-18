@@ -93,6 +93,14 @@ Round 2 of the architect-style agent (MCP side: `Spacecer2/minecraft-mcp-server`
 - **Report-then-resume on death**: when the bot dies mid-goal, it reports `[DIED]` and then RESUMES the goal (status `resumed-after-death`) instead of aborting.
 - **New goal skills**: `barricade` (place a defensive wall against a nearby enemy — the required barricade capability), `trade <item> <n>` (items from a villager), `open chest <item> <n>` (items from a nearby chest). `makeFood` now falls back through harvest → villager → chest by utility.
 
+## Round 3: realtime control authority (later commit)
+
+Round 3 of the architect-style agent (MCP side: `Spacecer2/minecraft-mcp-server` commit `cb7a859`, 440 tests passing). Formal spec: `docs/architecture.md` in the MCP repo — layer model, two delegation models (back brain vs goal engine), control-authority precedence, interruption semantics, escalation rules, state ownership, latency budgets.
+
+- **Hard constraints (P0 safety)**: the utility layer hard-vetoes death traps — drowning, lava, void, low-health. `checkConstraints(bot)` detects a violation, `safeInput(bot, input)` strips any option that violates, `utility()` returns `-Infinity` for a violating option, and `bestOption` refuses to pick one. `executeGoal` runs a `preFlightSafetyCheck` before every step: a violation blocks at intensity 3 with `needDecision` reason `constraint_violation`. The agent must never dive into lava or walk off a cliff, even when a goal or the plan says to.
+- **Interrupt priority (P0 > P1 > P2 > P3 > P4)**: interrupts carry a priority (safety > reflexes > committed action > goal policy > planning). A higher-priority interrupt overwrites the current one; a same-or-lower one is suppressed, so a random creeper ping cannot clobber an active void emergency.
+- **Anti-thrash (hysteresis, cooldown, min-commitment, aggregation)**: the watchdog suppresses flickering triggers — hysteresis requires a danger to persist `pendingTickCount` ticks before firing; cooldown gates re-triggering of the same event within `setCooldownMs`; min-commitment (`noteCommitment`/`commitmentSuppresses`) lets a committed goal finish; event aggregation (`recentTriggers`) batches near-simultaneous triggers into one decision; goal disposition tracks whether the goal is resumable or invalid.
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,
