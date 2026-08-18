@@ -60,6 +60,13 @@ round-trips and navigate like a human:
 - **Blueprint & redstone**: `build-from-grid` (char-coded blueprint), `redstone-layout`
   (advisory designs for door/lamp/trap/piston/rsswitch/auto-farm).
 
+## Round-3: autonomy + world + containers + QA (later commits)
+
+- **Task runner**: `run-goal` (one-command build/gather), `run-task-status`/`run-task-step`/`abort-task`.
+- **World map**: `map-mark`/`map-list`/`map-clear`/`map-nearby`, `explore` sweep.
+- **Containers & interaction**: `find-container`/`open-container`/`deposit-item`/`withdraw-item`, `organize-inventory`, `activate-block`, `use-item-on`.
+- **Build QA + redstone + persistence + safety**: `inspect-build`, `secure-perimeter`, `place-redstone`, `blueprint-save`/`blueprint-list`/`blueprint-load`.
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,

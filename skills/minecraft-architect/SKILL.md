@@ -219,9 +219,17 @@ Given the minecraft-mcp-server tools, a clean build session is:
 8. **Move between sites** with `move-toward` (offsets) or `goto-named` (saved
    waypoints); avoid hostiles with `find-hostiles` / `get-surroundings`.
 9. **Blueprint facades/foundations** with `build-from-grid`; wire circuits from
-   `redstone-layout` (door/lamp/trap/piston/rsswitch/auto-farm).
-10. **Final walkaround**: `scan-area` the finished build; confirm the scaffolding
-   is gone and the path is clear; light it at night.
+   `redstone-layout` (door/lamp/trap/piston/rsswitch/auto-farm); persist
+   reusable layouts with `blueprint-save`/`blueprint-load`.
+10. **One-command jobs**: for common goals use `run-goal build <template>` or
+    `run-goal collect <n> <item>`, then advance with `run-task-step` /
+    `run-task-status`. Track discovered sites with `map-mark`/`explore`.
+11. **Stock a base**: `deposit-item`/`withdraw-item`/`open-container` to move
+    materials between inventory and chests; `organize-inventory` to see what
+    you have.
+12. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
+    floating/gap blocks); confirm the scaffolding is gone, the path is clear,
+    and `secure-perimeter` placed lights against night mobs.
 
 ### Anti-patterns (never do)
 - Placing a block before scanning the site.
