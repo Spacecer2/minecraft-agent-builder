@@ -80,6 +80,10 @@ round-trips and navigate like a human:
 - **Chat-triggered preemption**: a player writing in chat instantly interrupts the current action and switches to `listen` mode, via a background listener running in parallel (no polling). Read the command with `read-interrupt`, respond, then `watchdog-resume`.
 - **Cooperative cancellation**: long-running tools (`move-to-position`, `walk-path`, `place-blocks`, `fill-area`, `execute-plan`, `run-task-step`) return `[INTERRUPTED]` and stay resumable, so the watchdog can cancel and switch the agent's mode via prompt injection.
 
+## Back brain (later commit)
+
+- **Permission-layer delegation brain**: `run-goal` runs deterministic hardcoded defaults per goal, checks circumstances, and returns concise verified reports. Compound goals ("get some crops and drop me some bread" → harvest → make bread → deliver). Uses existing items first; crafts only when absent; escalates to the front brain only at the deepest blocked state via `BLOCKED: <reason>. Context: <json>.` NEED_DECISION. Reasoning intensity scales with circumstances (0 = no LLM, 1-2 = deterministic fallback, 3 = NEED_DECISION).
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,

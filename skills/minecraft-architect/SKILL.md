@@ -251,7 +251,16 @@ Given the minecraft-mcp-server tools, a clean build session is:
     `read-interrupt`, respond, then `watchdog-resume` to go back to what you
     were doing. This listening runs in the background in parallel — you never
     need to poll for it.
-15. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
+15. **Delegate to the back brain, don't hand-drive**: use `run-goal` for compound
+    goals ("get some crops and drop me some bread") — the back brain runs the
+    deterministic default plan, checks circumstances, and returns a concise
+    verified report (`harvested 4 wheat → made bread x1 → delivered bread x1 to
+    Spacecer2`). It uses existing items first, only crafts when absent, and
+    escalates to you (the front brain) only at the deepest blocked state with a
+    `BLOCKED: <reason>. Context: <json>.` NEED_DECISION — direct it or call
+    `run-task-resume`. Reasoning intensity scales with circumstances: cheap
+    defaults, deeper reasoning only when reality demands.
+16. **Final walkaround**: `scan-area` + `inspect-build` the finished build (fix
     floating/gap blocks); confirm the scaffolding is gone, the path is clear,
     and `secure-perimeter` placed lights against night mobs.
 
