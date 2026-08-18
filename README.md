@@ -74,6 +74,11 @@ round-trips and navigate like a human:
 - **Motion**: `find-safe-path`, `walk-path`, `wait`, `until`.
 - **Vision/awareness**: `get-bot-stats` (consolidated dashboard), `describe-view`, `interact-entity`.
 
+## Round-5: event-driven preemption watchdog (later commit)
+
+- **Watchdog**: `watchdog-start` (hostile/creeper/fall/void/lava/low-health/hunger/on-fire/night/drowning/inventory-full), `read-interrupt`, `watchdog-status`, `watchdog-stop`, `watchdog-resume`, `set-mode`/`get-mode`.
+- **Cooperative cancellation**: long-running tools (`move-to-position`, `walk-path`, `place-blocks`, `fill-area`, `execute-plan`, `run-task-step`) return `[INTERRUPTED]` and stay resumable, so the watchdog can cancel and switch the agent's mode via prompt injection.
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,
