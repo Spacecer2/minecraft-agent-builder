@@ -24,8 +24,8 @@ building-guide principles.
 
 ## Companion work: minecraft-mcp-server fixes
 
-The local working tree of `yuniko-software/minecraft-mcp-server` carries fixes
-that make the agent behave like a careful human player. Tracked as GitHub issues:
+The fork `Spacecer2/minecraft-mcp-server` carries fixes that make the agent
+behave like a careful human player. Tracked as GitHub issues:
 
 - #3 Fix pathfinding & movement truth (Movements config, fly-to gamemode guard,
   actual-result positions, validateWorldY, honest move-in-direction).
@@ -33,6 +33,20 @@ that make the agent behave like a careful human player. Tracked as GitHub issues
   verify-after-write, get-world-state / scan-area / verify-block tools).
 - #5 Fix chat & stdio protocol safety (removed stdout filter, event-driven
   wait-for-chat, from / onlyMentionsMe chat filters).
+
+## Builder-efficiency tools (later commits)
+
+Beyond the fixes, the fork adds primitives that let the agent build in fewer
+round-trips and navigate like a human:
+
+- **Memory & batch**: `remember`/`recall`/`forget`, `add-task`/`list-tasks`/
+  `update-task` intent ledger, `place-blocks`, `fill-area`, `place-relative`.
+- **Navigation**: `move-toward`, `move-toward-bearing` (compass), `goto-entity`,
+  `save-location`/`goto-named`/`list-locations` (waypoints).
+- **Danger & world**: enriched `get-world-state`, `get-surroundings`,
+  `find-hostiles`.
+- **Coordination & safety**: `agent-share`/`agent-recall`/`agent-forget` blackboard,
+  `list-bot-state`, awaited spawn, approach timeouts, post-craft verify.
 
 ## Building ethos
 

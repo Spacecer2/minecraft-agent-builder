@@ -203,14 +203,20 @@ Reason about redstone the way a circuit designer does: **signal, delay, switch**
 
 Given the minecraft-mcp-server tools, a clean build session is:
 
-1. `get-world-state` → orient, check gamemode/health/time.
+1. `get-world-state` → orient, check gamemode/health/time/danger.
 2. `scan-area {x1,y1,z1,x2,y2,z2}` → read the site and confirm clearances.
-3. Choose template + footprint; decide the staging area and the path.
-4. **Foundation**: `place-block` each course from the staging area outward;
-   `verify-block` each. Keep an exit.
+3. Choose template + footprint; `remember key=plan value=<footprint>` to persist
+   the plan; decide the staging area and the path.
+4. **Foundation**: `fill-area` (or `place-blocks` for non-rectangular) from the
+   staging area outward; each placement verifies itself. Keep an exit.
 5. **Scaffold** (if height > 3): pillar up outside, work, tear down (see §2).
-6. **Walls → openings → roof → details**, verifying each block as placed.
-7. **Final walkaround**: `scan-area` the finished build; confirm the scaffolding
+   Use `place-relative` with vertical offsets to reach courses cleanly.
+6. **Walls → openings → roof → details**: `place-relative` / `place-blocks` /
+   `fill-area`, tracking stage in `add-task`/`update-task` so the intent ledger
+   survives long builds.
+7. **Move between sites** with `move-toward` (offsets) or `goto-named` (saved
+   waypoints); avoid hostiles with `find-hostiles` / `get-surroundings`.
+8. **Final walkaround**: `scan-area` the finished build; confirm the scaffolding
    is gone and the path is clear; light it at night.
 
 ### Anti-patterns (never do)
