@@ -204,19 +204,23 @@ Reason about redstone the way a circuit designer does: **signal, delay, switch**
 Given the minecraft-mcp-server tools, a clean build session is:
 
 1. `get-world-state` → orient, check gamemode/health/time/danger.
-2. `scan-area {x1,y1,z1,x2,y2,z2}` → read the site and confirm clearances.
-3. Choose template + footprint; `remember key=plan value=<footprint>` to persist
-   the plan; decide the staging area and the path.
-4. **Foundation**: `fill-area` (or `place-blocks` for non-rectangular) from the
-   staging area outward; each placement verifies itself. Keep an exit.
-5. **Scaffold** (if height > 3): pillar up outside, work, tear down (see §2).
-   Use `place-relative` with vertical offsets to reach courses cleanly.
-6. **Walls → openings → roof → details**: `place-relative` / `place-blocks` /
-   `fill-area`, tracking stage in `add-task`/`update-task` so the intent ledger
-   survives long builds.
-7. **Move between sites** with `move-toward` (offsets) or `goto-named` (saved
+2. `check-build-site {x1,y1,z1,x2,y2,z2}` → validate the site is clear and the
+   base is buildable before committing.
+3. `load-template {name, w, d, palette}` → choose an archetype and see its
+   blueprint; `list-templates` to pick.
+4. `plan-build {template, x, y, z, w, d, palette}` → expand the template into an
+   ordered, staged block plan; `remember key=plan value=<id>` to persist it.
+5. **Execute stage by stage**: `execute-plan` places the next blocks (foundation →
+   walls → roof → details), verifying each; track progress in `add-task`/
+   `update-task` and with `plan-status`.
+6. **Gather materials** in survival first: `gather-loop {itemName, count}` /
+   `collect-item`, watch `resource-ledger` so you have enough stock.
+7. **Scaffold** (if height > 3): pillar up outside, work, tear down (see §2).
+8. **Move between sites** with `move-toward` (offsets) or `goto-named` (saved
    waypoints); avoid hostiles with `find-hostiles` / `get-surroundings`.
-8. **Final walkaround**: `scan-area` the finished build; confirm the scaffolding
+9. **Blueprint facades/foundations** with `build-from-grid`; wire circuits from
+   `redstone-layout` (door/lamp/trap/piston/rsswitch/auto-farm).
+10. **Final walkaround**: `scan-area` the finished build; confirm the scaffolding
    is gone and the path is clear; light it at night.
 
 ### Anti-patterns (never do)

@@ -48,6 +48,18 @@ round-trips and navigate like a human:
 - **Coordination & safety**: `agent-share`/`agent-recall`/`agent-forget` blackboard,
   `list-bot-state`, awaited spawn, approach timeouts, post-craft verify.
 
+## Round-2: build engine (later commits)
+
+- **Planning & templates**: `load-template`/`list-templates` (archetypes),
+  `plan-build`/`plan-status`/`execute-plan`/`abort-plan` (staged, verified build
+  execution — makes the architect skill executable).
+- **Perception**: `look-ahead` (raycast), `path-status` (reachability),
+  `check-build-site` (validate a volume before building).
+- **Gathering & economy**: `collect-item`/`gather-loop` (dig source blocks),
+  `resource-ledger` (material tracking).
+- **Blueprint & redstone**: `build-from-grid` (char-coded blueprint), `redstone-layout`
+  (advisory designs for door/lamp/trap/piston/rsswitch/auto-farm).
+
 ## Building ethos
 
 Building is efficiency. Read the site before you place a block, keep a path,
